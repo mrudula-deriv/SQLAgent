@@ -110,12 +110,31 @@ def generate_sql_node(state: AgentState) -> AgentState:
     llm = ChatOpenAI(temperature=0, model_name="gpt-4")
  
     
-    system_prompt = f"""You are a master SQL query generator specialized in Business Intelligence and KPI reporting. You are experienced in generating SQL queries for complex business requirements. You understand the business requirements and can generate the correct and constrained SQL query.
+    system_prompt = f"""You are a master SQL query generator specialized in Business Intelligence and KPI reporting. Follow these general guidelines when converting questions to SQL:
+
+1. Data Quality Guidelines:
+   - Filter out internal data (is_internal = FALSE)
+   - Use appropriate date ranges for analysis 
+   - Handle NULL values explicitly
+   - Use DISTINCT for unique entity counts
+   - Consider data completeness in calculations
+
+2. Business Understanding:
+   - Identify the core business metric being requested
+   - Consider the complete business process flow
+   - Account for all relevant business states
+   - Apply appropriate business rules and filters
+
+3. Data Quality:
+   - Use DISTINCT when counting unique entities
+   - Handle NULL values appropriately
+   - Ensure date comparisons are logical
+   - Consider data completeness in calculations
 
 Available Schema:
 {table_info}
 
-IMPORTANT: Return ONLY the raw SQL query. DO NOT use markdown formatting, code blocks, or any other text. The query must be directly executable."""
+IMPORTANT: Generate clean, executable SQL without any markdown or formatting."""
     
     response = llm.invoke([
         SystemMessage(content=system_prompt),
@@ -133,15 +152,13 @@ def verify_intent_node(state: AgentState) -> AgentState:
     logger.info("\n=== Verifying SQL Intent ===")
     logger.info(f"SQL to verify:\n{state['sql_query']}")
     
-    # Configure ChatOpenAI with environment variables
-    
     llm = ChatOpenAI(temperature=0, model_name="gpt-4")
     
     system_prompt = f"""You are a SQL query interpreter and validator. Your task is to:
     1. Translate the SQL query into natural language
-    2. Compare it with the original question and make sure the meaning is exactly the same
-    3. SHOULD check if the query returns exactly what is asked for in the original question
-    4. Verify the query against the available schema
+    2. Compare it with the original question and make sure the meaning is EXACTLY the same
+    3. SHOULD STRICTLY check if the query returns exactly what is asked for in the original question
+    4. STRICTLY verify the query against the available schema
     5. Check for potential issues in:
        - Table and column selection
        - Data type compatibility
@@ -149,11 +166,13 @@ def verify_intent_node(state: AgentState) -> AgentState:
        - Aggregation methods
        - Time period handling
        - Business logic interpretation
-    
-    Available Schema:
-    {table_info}
-    
-    Format your response as:
+
+   
+
+Available Schema:
+{table_info}
+
+Format your response as:
     SQL MEANING: [natural language translation of the SQL]
     INTENT MATCH: [True/False]
     SCHEMA VERIFICATION: [List any schema-related issues]
@@ -164,11 +183,11 @@ def verify_intent_node(state: AgentState) -> AgentState:
 
 SQL Query: {state["sql_query"]}
 
-Please analyze if the SQL query:
-1. Correctly captures the intent of the original question
-2. Uses the appropriate tables and columns from the schema
-3. Implements the business logic correctly
-4. Handles time periods and aggregations appropriately"""
+Please:
+1. Translate the SQL query into clear business language
+2. Verify every column and table exists in the schema
+3. Confirm the logic matches the original question
+4. Check all necessary filters and conditions"""
 
     response = llm.invoke([
         SystemMessage(content=system_prompt),
