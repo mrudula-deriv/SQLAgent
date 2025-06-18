@@ -49,6 +49,22 @@ logger = setup_logger()
 # Load environment variables from .env
 load_dotenv()
 
+# OpenAI configuration
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+API_BASE_URL = os.getenv('API_BASE_URL')
+OPENAI_MODEL_NAME = os.getenv('OPENAI_MODEL_NAME', 'gpt-4o')  # Default to gpt-4o for custom endpoint
+llm_config = {
+        'temperature': 0, 
+        'model_name': OPENAI_MODEL_NAME,
+        'api_key': OPENAI_API_KEY
+    }
+    
+if API_BASE_URL:
+    llm_config['base_url'] = API_BASE_URL
+
+llm = ChatOpenAI(**llm_config)
+
+
 db_params = {
     'host': os.getenv('host'),
     'port': os.getenv('port'),
@@ -56,11 +72,6 @@ db_params = {
     'user': os.getenv('user'),
     'password': os.getenv('password')
 }
-
-# OpenAI configuration from environment variables
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-API_BASE_URL = os.getenv('API_BASE_URL')
-OPENAI_MODEL_NAME = os.getenv('OPENAI_MODEL_NAME')
 
 conn = psycopg2.connect(**db_params)
 cursor = conn.cursor(cursor_factory=RealDictCursor)
@@ -107,7 +118,7 @@ def generate_sql_node(state: AgentState) -> AgentState:
     logger.info(f"Input prompt: {state['prompt']}")
     
     # Configure ChatOpenAI with environment variables
-    llm = ChatOpenAI(temperature=0, model_name="gpt-4")
+    
  
     
     system_prompt = f"""You are a master SQL query generator specialized in Business Intelligence and KPI reporting. Follow these general guidelines when converting questions to SQL:
@@ -152,7 +163,7 @@ def verify_intent_node(state: AgentState) -> AgentState:
     logger.info("\n=== Verifying SQL Intent ===")
     logger.info(f"SQL to verify:\n{state['sql_query']}")
     
-    llm = ChatOpenAI(temperature=0, model_name="gpt-4")
+    
     
     system_prompt = f"""You are a SQL query interpreter and validator. Your task is to:
     1. Translate the SQL query into natural language
