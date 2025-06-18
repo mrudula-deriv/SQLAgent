@@ -7,7 +7,7 @@ A powerful SQL query generator that converts natural language questions into pre
 1. Create a `.env` file with your configuration:
 ```env
 OPENAI_API_KEY=your_api_key_here
-OPENAI_MODEL_NAME=gpt-4  # optional, defaults to gpt-4
+OPENAI_MODEL_NAME=gpt-4o  # optional, defaults to gpt-4o
 API_BASE_URL=your_api_base_url  # optional
 
 # Database configuration
